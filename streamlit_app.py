@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import os
 import requests
 import json
@@ -133,7 +134,7 @@ def show_generation_page(access_token):
     
     # Get the corresponding instruction
     instruction = st.session_state.instruction_categories[selected_category]
-    
+    banned_words_list = access_banned_words_list()
     # Display the actual instruction that will be used (optional - you can remove this if you don't want to show it)
     st.caption(f"Using instruction: *{instruction}*")
     
@@ -164,21 +165,34 @@ def show_generation_page(access_token):
             # Generate captions
             for i in range(st.session_state["num_captions"]):
                 with st.spinner(f"Generating caption {i + 1}..."):
-                    response = generate_caption_from_api(
-                        instruction, input_text,
-                        st.session_state["max_length"],
-                        st.session_state["temperature"],
-                        st.session_state["top_k"],
-                        st.session_state["top_p"],
-                        access_token
-                    )
+                    valid_caption = False  # Flag to check if the generated caption is valid
+                    while not valid_caption:
+                        response = generate_caption_from_api(
+                            instruction,
+                            input_text,
+                            st.session_state["max_length"],
+                            st.session_state["temperature"],
+                            st.session_state["top_k"],
+                            st.session_state["top_p"],
+                            access_token,
+                        )
+                        
+                        # Check if the response contains any banned words
+                        if response:
+                            words_in_response = response.lower().split()
+                            if not any(banned_word in words_in_response for banned_word in banned_words_list):
+                                valid_caption = True  # Caption is valid if no banned words are found
+                            else:
+                                st.warning(f"Generated caption contains banned words. Retrying...")
                     
-                    if response:
-                        st.session_state.current_captions.append(response)
-                        caption_text = ""
-                        for idx, caption in enumerate(st.session_state.current_captions):
-                            caption_text += f"**Caption {idx + 1}:** {caption}\n\n"
-                        caption_placeholder.markdown(caption_text)
+                    # Append the valid caption to the session state
+                    st.session_state.current_captions.append(response)
+                    
+                    # Update the captions displayed
+                    caption_text = ""
+                    for idx, caption in enumerate(st.session_state.current_captions):
+                        caption_text += f"**Caption {idx + 1}:** {caption}\n\n"
+                    caption_placeholder.markdown(caption_text)
             
             # After generation is complete, add to history
             if st.session_state.current_captions:
@@ -509,6 +523,12 @@ def validate_inputs(instruction: str, input_text: str) -> tuple[bool, str]:
         return False, "Context is too long (max 1000 characters)"
     return True, ""
 
+def access_banned_words_list():
+    df = pd.read_csv(r'assets/banned_words.csv', header=None, names=['word'])
+    df['word'] = df['word'].str.lower().str.strip()
+    banned_word_list = df['word'].tolist()
+    return banned_word_list
+
 # Start the Streamlit app
 if __name__ == "__main__":
     # Initialize session state for modal controls
@@ -516,5 +536,4 @@ if __name__ == "__main__":
         st.session_state.closeModal = False
     if 'useSettings' not in st.session_state:
         st.session_state.useSettings = None
-        
     main()
