@@ -82,17 +82,17 @@ def initialize_session_state():
         "settings_updated": False,
         "is_generating": False,
         "instruction_categories": {
-            "Tip me": "Generate a Tip Me Caption",
-            "Winner": "Generate a Winner Caption",
-            "Holiday": "Generate a Holiday Caption",
-            "Bundle": "Generate a Bundle Caption",
-            "Descriptive": "Generate a Descriptive Caption",
-            "Spin the Wheel": "Generate a Spin the Wheel Caption",
-            "Girlfriend": "Generate a Girlfriend Caption",
-            "List": "Generate a List Caption",
-            "Short": "Generate a Short Caption",
-            "Sub Promo": "Generate a Sub Promo Caption",
-            "VIP": "Generate a VIP Caption"
+            "Tip me": "Generate a Tip Me Captions",
+            "Winner": "Generate a Winner Captions",
+            "Holiday": "Generate a Holiday Captions",
+            "Bundle": "Generate a Bundle Captions",
+            "Descriptive": "Generate a Descriptive Captions",
+            "Spin the Wheel": "Generate a Spin the Wheel Captions",
+            "Girlfriend": "Generate a Girlfriend Captions",
+            "List": "Generate a List Captions",
+            "Short": "Generate a Short Captions",
+            "Sub Promo": "Generate a Sub Promo Captions",
+            "VIP": "Generate a VIP Captions"
         }
     }
     
