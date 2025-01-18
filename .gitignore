@@ -4,6 +4,7 @@ merged_model.mar
 .streamlit/config.toml
 ignore
 connections.py
+Credentials_API_KEY
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
