@@ -1,10 +1,10 @@
 Llama-3-8B-Caption-RAG
 merged_model.mar
+.streamlit
 .streamlit/secrets.toml
 .streamlit/config.toml
 ignore
 connections.py
-Credentials_API_KEY
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
