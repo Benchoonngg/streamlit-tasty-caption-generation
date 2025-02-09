@@ -185,6 +185,7 @@ def show_generation_page(access_token):
                                 valid_caption = True  # Caption is valid if no banned words are found
                             else:
                                 st.warning(f"Generated caption contains banned words. Retrying...")
+                                continue  # Continue the loop to generate a new caption
                     
                     # Append the valid caption to the session state
                     st.session_state.current_captions.append(response)
