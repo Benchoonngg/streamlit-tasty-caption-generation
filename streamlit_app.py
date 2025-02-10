@@ -113,103 +113,123 @@ def add_logout_button():
 
 def show_generation_page(access_token):
     """Display the main caption generation page"""
-    st.markdown(
-        "<h1 style='text-align: center;'>Tasty Caption Generation 🫦</h1>",
-        unsafe_allow_html=True
-    )
-    
-    # Welcome message
-    st.markdown(f"Welcome, {st.session_state.username}!")
-    
-    # Show success message if settings were updated
-    if st.session_state.get('settings_updated', False):
-        st.success("Settings updated successfully!")
-        st.session_state.settings_updated = False
-    
-    # Replace text input with dropdown
-    selected_category = st.selectbox(
-        "Select Caption Category:",
-        options=list(st.session_state.instruction_categories.keys()),
-        disabled=st.session_state.is_generating
-    )
-    
-    # Get the corresponding instruction
-    instruction = st.session_state.instruction_categories[selected_category]
-    banned_words_list = access_banned_words_list()
-    # Display the actual instruction that will be used (optional - you can remove this if you don't want to show it)
-    st.caption(f"Using instruction: *{instruction}*")
-    
-    input_text = st.text_area(
-        "Enter Context:", 
-        placeholder="Describe the Caption",
-        disabled=st.session_state.is_generating
-    )
-    
-    # Create a placeholder for captions
-    caption_placeholder = st.empty()
-    
-    # Display existing captions if they exist
-    if 'current_captions' in st.session_state and st.session_state.current_captions:
-        caption_text = ""
-        for idx, caption in enumerate(st.session_state.current_captions):
-            caption_text += f"**Caption {idx + 1}:** {caption}\n\n"
-        caption_placeholder.markdown(caption_text)
-    
-    if st.button("Generate Captions", use_container_width=True):
-        is_valid, error_message = validate_inputs(instruction, input_text)
-        if not is_valid:
-            st.error(error_message)
-        else:
-            # Clear previous captions
-            st.session_state.current_captions = []
+    try:
+        # Title and welcome message
+        st.markdown(
+            f"""
+            <div style="text-align: center; padding: 2rem 0; margin-bottom: 2rem; background-color: #0E1117;">
+                <h1 style="margin: 0; font-size: 2.5rem;">Tasty Caption Generation 🫦</h1>
+                <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem; opacity: 0.9;">Welcome, {st.session_state.username}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        with st.spinner("Loading..."):
+            # Show success message if settings were updated
+            if st.session_state.get('settings_updated', False):
+                st.success("✨ Settings updated successfully!")
+                st.session_state.settings_updated = False
             
-            # Generate captions
-            for i in range(st.session_state["num_captions"]):
-                with st.spinner(f"Generating caption {i + 1}..."):
-                    valid_caption = False  # Flag to check if the generated caption is valid
-                    while not valid_caption:
-                        response = generate_caption_from_api(
-                            instruction,
-                            input_text,
-                            st.session_state["max_length"],
-                            st.session_state["temperature"],
-                            st.session_state["top_k"],
-                            st.session_state["top_p"],
-                            access_token,
-                        )
+            # Dropdown with better styling
+            selected_category = st.selectbox(
+                "Select Caption Category:",
+                options=list(st.session_state.instruction_categories.keys()),
+                disabled=st.session_state.is_generating,
+                key="category_selector"
+            )
+            
+            # Get the corresponding instruction
+            instruction = st.session_state.instruction_categories[selected_category]
+            banned_words_list = access_banned_words_list()
+            
+            # Context input with better styling
+            input_text = st.text_area(
+                "Enter Context:", 
+                placeholder="Describe your caption here...",
+                disabled=st.session_state.is_generating,
+                height=150
+            )
+            
+            # Create a placeholder for captions
+            caption_placeholder = st.empty()
+            
+            # Display existing captions if they exist
+            if 'current_captions' in st.session_state and st.session_state.current_captions:
+                caption_text = "<div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; margin: 20px 0;'>"
+                for idx, caption in enumerate(st.session_state.current_captions):
+                    caption_text += f"<p><strong>Caption {idx + 1}:</strong> {caption}</p>"
+                caption_text += "</div>"
+                caption_placeholder.markdown(caption_text, unsafe_allow_html=True)
+            
+            # Generate button with loading state
+            if st.button("✨ Generate Captions", use_container_width=True, type="primary"):
+                is_valid, error_message = validate_inputs(instruction, input_text)
+                if not is_valid:
+                    st.error(f"⚠️ {error_message}")
+                else:
+                    st.session_state.current_captions = []
+                    for i in range(st.session_state["num_captions"]):
+                        with st.spinner(f"🎯 Generating caption {i + 1}..."):
+                            try:
+                                valid_caption = False
+                                retries = 0
+                                max_retries = 3
+                                
+                                while not valid_caption and retries < max_retries:
+                                    response = generate_caption_from_api(
+                                        instruction,
+                                        input_text,
+                                        st.session_state["max_length"],
+                                        st.session_state["temperature"],
+                                        st.session_state["top_k"],
+                                        st.session_state["top_p"],
+                                        access_token,
+                                    )
+                                    
+                                    if response:
+                                        words_in_response = response.lower().split()
+                                        if not any(banned_word in words_in_response for banned_word in banned_words_list):
+                                            valid_caption = True
+                                        else:
+                                            retries += 1
+                                            if retries < max_retries:
+                                                st.warning(f"⚠️ Attempt {retries}: Generated caption contains banned words. Retrying...")
+                                            else:
+                                                st.error("❌ Max retries reached. Please try again with different parameters.")
+                                                break
+                                
+                                if valid_caption:
+                                    st.session_state.current_captions.append(response)
+                                    caption_text = "<div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; margin: 20px 0;'>"
+                                    for idx, caption in enumerate(st.session_state.current_captions):
+                                        caption_text += f"<p><strong>Caption {idx + 1}:</strong> {caption}</p>"
+                                    caption_text += "</div>"
+                                    caption_placeholder.markdown(caption_text, unsafe_allow_html=True)
+                            
+                            except Exception as e:
+                                st.error(f"❌ Error generating caption: {str(e)}")
+                                break
+                    
+                    if st.session_state.current_captions:
+                        st.success("✨ Caption generation completed!")
                         
-                        # Check if the response contains any banned words
-                        if response:
-                            words_in_response = response.lower().split()
-                            if not any(banned_word in words_in_response for banned_word in banned_words_list):
-                                valid_caption = True  # Caption is valid if no banned words are found
-                            else:
-                                st.warning(f"Generated caption contains banned words. Retrying...")
-                                continue  # Continue the loop to generate a new caption
-                    
-                    # Append the valid caption to the session state
-                    st.session_state.current_captions.append(response)
-                    
-                    # Update the captions displayed
-                    caption_text = ""
-                    for idx, caption in enumerate(st.session_state.current_captions):
-                        caption_text += f"**Caption {idx + 1}:** {caption}\n\n"
-                    caption_placeholder.markdown(caption_text)
-            
-            # After generation is complete, add to history
-            if st.session_state.current_captions:
-                history_entry = {
-                    "instruction": instruction,
-                    "context": input_text,
-                    "captions": st.session_state.current_captions.copy(),
-                    "settings": {
-                        "temperature": st.session_state.temperature,
-                        "top_k": st.session_state.top_k,
-                        "top_p": st.session_state.top_p
-                    }
-                }
-                # Add new entry to the beginning of the history
-                st.session_state.caption_history.insert(0, history_entry)
+                        # Add to history
+                        history_entry = {
+                            "instruction": instruction,
+                            "context": input_text,
+                            "captions": st.session_state.current_captions.copy(),
+                            "settings": {
+                                "temperature": st.session_state.temperature,
+                                "top_k": st.session_state.top_k,
+                                "top_p": st.session_state.top_p
+                            }
+                        }
+                        st.session_state.caption_history.insert(0, history_entry)
+    
+    except Exception as e:
+        st.error(f"❌ An error occurred: {str(e)}")
+        st.error("Please try refreshing the page or contact support if the issue persists.")
 
 def show_history_page():
     """Display the history page"""
