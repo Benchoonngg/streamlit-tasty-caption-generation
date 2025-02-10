@@ -118,7 +118,7 @@ def show_generation_page(access_token):
         st.markdown(
             f"""
             <div style="text-align: center; padding: 2rem 0; margin-bottom: 2rem; background-color: #0E1117;">
-                <h1 style="margin: 0; font-size: 2.5rem;">Tasty Caption Generation 🫦</h1>
+                <h1 style="margin: 0; font-size: 2.5rem;">Tasty Caption Generation v2 🫦</h1>
                 <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem; opacity: 0.9;">Welcome, {st.session_state.username}</p>
             </div>
             """,
